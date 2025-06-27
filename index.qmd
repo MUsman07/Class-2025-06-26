@@ -1,0 +1,60 @@
+---
+title: "Census tracts"
+execute: 
+  echo: false
+---
+
+```{r}
+#| message: false
+library(tidyverse)
+
+data <- read_csv("https://raw.githubusercontent.com/PPBDS/primer.data/master/data-raw/nyc_tracts.csv",show_col_types = FALSE )
+
+```
+
+```{r}
+#| message: false
+library(ggplot2)
+library(dplyr)
+library(readr)
+library(stringr)
+library(plotly)
+library(scales)
+
+# Load and clean your data
+df <- data |>
+  mutate(
+    borough = str_extract(tract, "(?<=;\\s)([^;]+)(?=\\sCounty)")
+  ) |>
+  filter(!is.na(med_income))
+
+# Use a custom gradient to match your image: purple → blue → green → yellow
+custom_colors <- c("#5e3c99", "#4393c3", "#7fbf7b", "#d9f0d3", "#fee08b", "#e66101")
+
+# ggplot object (static)
+p <- ggplot(df, aes(x = med_income, y = race, color = med_income, 
+                    text = paste0("Borough: ", borough,
+                                  "<br>Race: ", race,
+                                  "<br>Income: $", comma(med_income)))) +
+  geom_point(alpha = 0.7, size = 2.2) +
+  scale_color_gradientn(colors = custom_colors) +
+  facet_wrap(~ borough, ncol = 1) +
+  labs(
+    title = "Race and Income Across Census Tracts in New York City",
+    x = "Median household income",
+    y = "Largest group in Census tract",
+    color = NULL
+  ) +
+  theme_minimal(base_size = 14) +
+  theme(
+    strip.text = element_text(face = "bold", size = 12),
+    panel.grid.major.y = element_blank(),
+    panel.grid.minor = element_blank(),
+    legend.position = "none"
+  )
+
+# Convert to interactive with plotly
+ggplotly(p, tooltip = "text")
+
+
+```
